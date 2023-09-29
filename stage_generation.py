@@ -1,11 +1,10 @@
-import os
-
 import torch
 import numpy as np
 from PIL import Image
 
 from transformers import DPTFeatureExtractor, DPTForDepthEstimation
 from diffusers import ControlNetModel, StableDiffusionXLControlNetPipeline, AutoencoderKL
+
 
 class StageGenerator:
 
@@ -30,7 +29,7 @@ class StageGenerator:
         ).to(self.device)
         self.pipe.enable_model_cpu_offload()
 
-    def get_depth_map(self, image:Image.Image) -> Image.Image:
+    def get_depth_map(self, image: Image.Image) -> Image.Image:
         image = image.convert("RGB")
         image = self.feature_extractor(images=image, return_tensors="pt").pixel_values.to(self.device)
         with torch.no_grad(), torch.autocast('cuda'):
@@ -51,13 +50,13 @@ class StageGenerator:
         image = Image.fromarray((image * 255.0).clip(0, 255).astype(np.uint8))
         return image
 
-
-    def __call__(self, prompt, depth_image: Image.Image, steps=30, controlnet_conditioning_scale = 0.5) -> Image.Image:
+    def __call__(self, prompt, depth_image: Image.Image, steps=30, controlnet_conditioning_scale=0.5) -> Image.Image:
         result = self.pipe(
             prompt, image=depth_image, num_inference_steps=30,
             controlnet_conditioning_scale=controlnet_conditioning_scale,
         ).images[0]
         return result
+
 
 def main(prompt, input_image_path, device):
     stage_generator = StageGenerator(device)
@@ -65,14 +64,6 @@ def main(prompt, input_image_path, device):
     depth_map.save('data/depth_map.png')
     generated = stage_generator(prompt, depth_map)
     generated.save('data/generated.png')
-
-
-
-
-
-
-
-
 
 
 if __name__ == "__main__":
